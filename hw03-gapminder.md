@@ -18,6 +18,69 @@ require(dplyr)
 Exploration 1:
 --------------
 
+Get the maximum and minimum of GDP per capita for all continents.
+
+``` r
+## Lets get the maximum GDP per capita, cheated from
+## https://stackoverflow.com/questions/40157648/find-max-per-group-with-dplyr-in-r?rq=1
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(which.max(gdpPercap)) # take max per group
+```
+
+    ## # A tibble: 5 x 6
+    ## # Groups:   continent [5]
+    ##   country       continent  year lifeExp       pop gdpPercap
+    ##   <fct>         <fct>     <int>   <dbl>     <int>     <dbl>
+    ## 1 Gabon         Africa     2007    56.7   1454867    13206.
+    ## 2 United States Americas   2007    78.2 301139947    42952.
+    ## 3 Kuwait        Asia       2007    77.6   2505559    47307.
+    ## 4 Norway        Europe     2007    80.2   4627926    49357.
+    ## 5 Australia     Oceania    2007    81.2  20434176    34435.
+
+``` r
+## the same works with which.min()
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(which.min(gdpPercap)) # take min per group
+```
+
+    ## # A tibble: 5 x 6
+    ## # Groups:   continent [5]
+    ##   country          continent  year lifeExp      pop gdpPercap
+    ##   <fct>            <fct>     <int>   <dbl>    <int>     <dbl>
+    ## 1 Congo, Dem. Rep. Africa     2007    46.5 64606759      278.
+    ## 2 Haiti            Americas   2007    60.9  8502814     1202.
+    ## 3 Myanmar          Asia       2007    62.1 47761980      944 
+    ## 4 Albania          Europe     2007    76.4  3600523     5937.
+    ## 5 New Zealand      Oceania    2007    80.2  4115771    25185.
+
+``` r
+## Or you can even just take the first row per group by specifiying slice(1)
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(1) # take first row per group
+```
+
+    ## # A tibble: 5 x 6
+    ## # Groups:   continent [5]
+    ##   country          continent  year lifeExp      pop gdpPercap
+    ##   <fct>            <fct>     <int>   <dbl>    <int>     <dbl>
+    ## 1 Congo, Dem. Rep. Africa     2007    46.5 64606759      278.
+    ## 2 Haiti            Americas   2007    60.9  8502814     1202.
+    ## 3 Myanmar          Asia       2007    62.1 47761980      944 
+    ## 4 Albania          Europe     2007    76.4  3600523     5937.
+    ## 5 New Zealand      Oceania    2007    80.2  4115771    25185.
+
+Exploration 2:
+--------------
+
 Let's have a look at the spread of GDP per capita within the continents
 
 ``` r
@@ -53,11 +116,11 @@ gapminder %>%
   ylab("GDP per capita (PPP Dollars)")
 ```
 
-![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-3-1.png)
+![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
 The boxplots confirms what we saw in the table.
 
-Exploration 2: How is life expectancy changing over time on different continents?
+Exploration 3: How is life expectancy changing over time on different continents?
 ---------------------------------------------------------------------------------
 
 Let's calculate the mean life expectancy per country first to get a sense of the data.
@@ -103,13 +166,13 @@ gapminder %>%
   ylab("Life expectancy (Years)")
 ```
 
-![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
 The difference per continent is tremendous! While Europe "started" with an average life expectancy of approximately 65 years in the 1950s, Africa and Asia's mean life expectancy was at approximately 40 to 45 years back then. Asia has caught up, though and its curve shows an impressive steepness.
 
 Note to myself with regards to the graph: Think about the order of how the different layers get plotted (e.g., plot thin lines for the background first and then add the thicker lines in the foreground). Also, facet\_grid() arranges the individual plots in one line, facet\_wrap() just wraps the plots around the line (customizable though how many plots). In our case, it was more useul to arrange them all on the same line to make comparisons easier.
 
-Exploration 3: Can we find a good story with life expectancy in relation to income?
+Exploration 4: Can we find a good story with life expectancy in relation to income?
 -----------------------------------------------------------------------------------
 
 Let's see if we can do something with the life expectancy data and the income. Maybe let's start with a table where we summarize life expectancy (mean across countries) against the GPD per capita of individual countries (again, the mean across countries) for the most recent year in the dataset. For the sake of playing with different measures with can also think about including the weighted means (with regards to population). This might tell us something about disparities within a continent.
@@ -145,7 +208,7 @@ gapminder %>%
   scale_x_log10() # use a log scale
 ```
 
-![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-7-1.png)
+![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
 Looks like there is a relationship between these two parameters what makes sense if we consider what potentialy influences life expectancy (quality of sanitary facilities, child fatality, access to medical services etc.)
 
@@ -215,7 +278,7 @@ require(ggrepel)
     scale_x_log10() # use a log scale
 ```
 
-![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-10-1.png)
+![](hw03-gapminder_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
 Two of these countries are again former French colonies. Botswana is a former British colony and South Africa was both a Dutch and later a British colony. So there only just a little support for the theory that the former French colonies might be better of. Could it be because they are geographically closer to Europe? Most of the top seven African countries are in the Mediterranian region... I guess we would need additional data to support more of this exploration.
 

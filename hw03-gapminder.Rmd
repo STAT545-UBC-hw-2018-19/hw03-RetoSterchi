@@ -15,7 +15,40 @@ require(ggplot2)
 require(dplyr)
 ```
 
+
 ## Exploration 1: 
+Get the maximum and minimum of GDP per capita for all continents.
+
+```{r}
+## Lets get the maximum GDP per capita, looked up under
+## https://stackoverflow.com/questions/40157648/find-max-per-group-with-dplyr-in-r?rq=1
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(which.max(gdpPercap)) # take max per group
+```
+
+The same works with which.min()
+
+```{r}
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(which.min(gdpPercap)) # take min per group
+```
+
+Or you can even just take the first row per group by specifiying slice(1)
+```{r}
+gapminder %>% 
+  filter(year == 2007) %>% # only 2007
+  group_by(continent) %>% # group by continent
+  arrange(gdpPercap) %>% # arrange within continent
+  slice(1) # take first row per group
+```
+
+## Exploration 2: 
 Let's have a look at the spread of GDP per capita within the continents
 
 ```{r}
@@ -47,7 +80,7 @@ gapminder %>%
 The boxplots confirms what we saw in the table. 
 
 
-## Exploration 2: How is life expectancy changing over time on different continents?
+## Exploration 3: How is life expectancy changing over time on different continents?
 
 Let's calculate the mean life expectancy per country first to get a sense of the data.
 
@@ -81,7 +114,7 @@ The difference per continent is tremendous! While Europe "started" with an avera
 
 Note to myself with regards to the graph: Think about the order of how the different layers get plotted (e.g., plot thin lines for the background first and then add the thicker lines in the foreground). Also, facet_grid() arranges the individual plots in one line, facet_wrap() just wraps the plots around the line (customizable though how many plots). In our case, it was more useul to arrange them all on the same line to make comparisons easier.
 
-## Exploration 3: Can we find a good story with life expectancy in relation to income?
+## Exploration 4: Can we find a good story with life expectancy in relation to income?
 Let's see if we can do something with the life expectancy data and the income. Maybe let's start with a table where we summarize life expectancy (mean across countries) against the GPD per capita of individual countries (again, the mean across countries) for the most recent year in the dataset. For the sake of playing with different measures with can also think about including the weighted means (with regards to population). This might tell us something about disparities within a continent.
 
 ```{r}
