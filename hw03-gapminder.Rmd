@@ -1,0 +1,183 @@
+---
+title: "hw03-gapminder"
+author: '@RetoSterchi'
+date: "September 28, 2018"
+output: github_document
+---
+
+# Homework 03: Use dplyr/ggplot2 to manipulate and explore data
+
+## First step: Load packages
+
+```{r message=FALSE, warning=FALSE}
+require(gapminder)
+require(ggplot2)
+require(dplyr)
+```
+
+## Exploration 1: 
+Let's have a look at the spread of GDP per capita within the continents
+
+```{r}
+gapminder %>% 
+  filter(year == 2007) %>% 
+  group_by(continent) %>% 
+  summarize(gdpMean = round(mean(gdpPercap),0),
+            gdpMin = round(min(gdpPercap),0),
+            gdpMax = round(max(gdpPercap),0),
+            gdpSD = round(sd(gdpPercap),0))
+  
+```
+
+This table already tells us a little bit about the data and the differences across the different continents. Some of them seem to have a larger spread than others (Americas, Asia, Europe).
+
+```{r}
+gapminder %>% 
+  filter(year == 2007) %>% 
+  group_by(continent) %>% 
+  ggplot(aes(x = continent, y = gdpPercap, fill = continent)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, aes(colour = continent), alpha = 0.8) +
+  ggtitle("Spread of GDP per capita within the continents") +
+  xlab("Continent") +
+  ylab("GDP per capita (PPP Dollars)")
+  
+```
+
+The boxplots confirms what we saw in the table. 
+
+
+## Exploration 2: How is life expectancy changing over time on different continents?
+
+Let's calculate the mean life expectancy per country first to get a sense of the data.
+
+```{r}
+gapminder %>% 
+  group_by(continent, year) %>% 
+  summarize(lifeExpMean = round(mean(lifeExp),0))
+```
+
+Now let's plot that to see how it developed over time (1952 - 2007). I think a plot showing the mean life expectancy per continent together with the life expectancy curves per country in the background could work nicely. Let's see.
+
+```{r fig.height = 5, fig.width = 10}
+gapminder %>% 
+  group_by(continent, year) %>% 
+  summarize(lifeExpMean = round(mean(lifeExp),0)) %>% # calculate mean per continent
+  ggplot(aes(x = year, y = lifeExpMean, colour = continent)) +
+  geom_line(data = gapminder, 
+            aes(x = year, y = lifeExp, group = country), 
+            alpha = 0.3) + # thinner line for each country
+  geom_line(size = 1.2) + # thicker line for mean
+  facet_grid(.~ continent) + # make plot for each continent
+  theme(legend.position="none") + # we dont need a legend
+  scale_x_continuous(breaks=seq(1950, 2010, 20)) + # specify ticks on x-axis
+  ggtitle("Spread of GDP per capita within the continents") +
+  xlab("Continent") +
+  ylab("Life expectancy (Years)")
+
+```
+
+The difference per continent is tremendous! While Europe "started" with an average life expectancy of approximately 65 years in the 1950s, Africa and Asia's mean life expectancy was at approximately 40 to 45 years back then. Asia has caught up, though and its curve shows an impressive steepness.
+
+Note to myself with regards to the graph: Think about the order of how the different layers get plotted (e.g., plot thin lines for the background first and then add the thicker lines in the foreground). Also, facet_grid() arranges the individual plots in one line, facet_wrap() just wraps the plots around the line (customizable though how many plots). In our case, it was more useul to arrange them all on the same line to make comparisons easier.
+
+## Exploration 3: Can we find a good story with life expectancy in relation to income?
+Let's see if we can do something with the life expectancy data and the income. Maybe let's start with a table where we summarize life expectancy (mean across countries) against the GPD per capita of individual countries (again, the mean across countries) for the most recent year in the dataset. For the sake of playing with different measures with can also think about including the weighted means (with regards to population). This might tell us something about disparities within a continent.
+
+```{r}
+gapminder %>% 
+  filter(year == 2007) %>% 
+  group_by(continent) %>% 
+  summarize(lifeExpMean = round(mean(lifeExp), 1),
+            gdpPercapMean = round(mean(gdpPercap),0),
+            lifeExpMeanW = round(weighted.mean(lifeExp,pop),1),
+            gdpPercapMeanW = round(weighted.mean(gdpPercap,pop),0))
+```
+
+```{r fig.height = 5, fig.width = 10}
+gapminder %>%
+  filter(year == 2007 & continent != "Oceania") %>% # exclude Oceania, since only two countries
+  ggplot(aes(x = gdpPercap, y = lifeExp, group = country, colour = continent)) +
+  geom_point() +
+  xlab("GDP per capita (PPP dollars)") +
+  ylab("Life expectancy (Years)") +
+  ggtitle("Life expectancy vs. Income (2007, without Oceania)") +
+  scale_fill_discrete(name="Continent") +
+  scale_x_log10() # use a log scale
+```
+
+Looks like there is a relationship between these two parameters what makes sense if we consider what potentialy influences life expectancy (quality of sanitary facilities, child fatality, access to medical services etc.)
+
+We can also see that there are seven countries in Africa where the life expectancy is above 70 years and comparable to many countries in Asia or some of Europe. Let's identify those seven countries with a query.
+
+```{r}
+gapminder %>%
+  filter(year == 2007 & continent == "Africa" & lifeExp > 70)
+```
+
+Many of these countries seem to be former French colonies (https://en.wikipedia.org/wiki/List_of_French_possessions_and_colonies). Reunion actually is an overseas department of France. Is there potentially a historic component to this that the former French colonies are better of due to their ties to France?
+
+What about African countries that have a fairly high GDP but still a lower life expectancy than our seven countries?
+
+```{r}
+gapminder %>%
+  filter(year == 2007 & continent == "Africa" & lifeExp < 70 & gdpPercap > 9000)
+```
+
+
+Let's label these countries on the top of the graph with the help of the ggrepel package where we can specify the location of the text labels.
+
+```{r fig.height = 5, fig.width = 10}
+require(ggrepel)
+
+  Query1 <- c("Reunion", "Libya", "Tunisia", "Mauritius", "Algeria", "Egypt", "Morocco")
+  Query2 <- c("Botswana", "Equatorial Guinea", "Gabon", "South Africa")
+  
+  gapminder %>%
+    filter(year == 2007 & continent != "Oceania") %>% # exclude Oceania, since only two countries
+    ggplot(aes(x = gdpPercap, y = lifeExp, group = country, colour = continent, label = country)) +
+    geom_point() +
+    geom_text_repel(data = subset(gapminder, year == 2007 & country %in% Query1),
+                    nudge_y = 90 - subset(gapminder, year == 2007 & 
+                                            country %in% Query1)$lifeExp) + # this alignes the labels on the top
+      geom_text_repel(data = subset(gapminder, year == 2007 & country %in% Query2),
+                    nudge_x = 120 - subset(gapminder, year == 2007 & 
+                                            country %in% Query2)$lifeExp) + # this alignes the labels on the right
+    xlab("GDP per capita (PPP dollars)") +
+    ylab("Life expectancy (Years)") +
+    ggtitle("Life expectancy vs. Income (2007, without Oceania)") +
+    scale_fill_discrete(name="Continent") +
+    scale_x_log10() # use a log scale
+```
+
+Two of these countries are again former French colonies. Botswana is a former British colony and South Africa was both a Dutch and later a British colony. So there only just a little support for the theory that the former French colonies might be better of. Could it be because they are geographically closer to Europe? Most of the top seven African countries are in the Mediterranian region... I guess we would need additional data to support more of this exploration.
+
+
+## Let's explore some other ways to make pleasant tables
+
+Let's check out the 'pander' package. This seems to be a nice way of showing tables in a report. Queries can directly by passed on to the pander() function and are displayed in a pleasing way instead of the tibble output format.
+
+Check out this link for more details on how to customize the output: http://rapporter.github.io/pander/
+
+```{r message=FALSE, warning=FALSE}
+# install.packages('pander')
+require(pander)
+
+## This makes nice table for a report
+pander(gapminder %>%
+  filter(year == 2007 & continent == "Africa" & lifeExp > 70))
+
+## This makes a simple table in a console style output
+pandoc.table(gapminder %>%
+  filter(year == 2007 & continent == "Africa" & lifeExp > 70),
+  style = "simple")
+
+```
+```{r}
+## We can also add captions to such tables and specify the alignment
+pander(gapminder %>%
+  filter(year == 2007 & continent == "Africa" & lifeExp > 70),
+  caption = "Hello, this is a table caption!",
+  justify = c('left', 'center', 'center', 'center', 'right', 'right'))
+```
+
