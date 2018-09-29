@@ -21,7 +21,7 @@ Exploration 1:
 Get the maximum and minimum of GDP per capita for all continents.
 
 ``` r
-## Lets get the maximum GDP per capita, cheated from
+## Lets get the maximum GDP per capita, looked up under
 ## https://stackoverflow.com/questions/40157648/find-max-per-group-with-dplyr-in-r?rq=1
 gapminder %>% 
   filter(year == 2007) %>% # only 2007
@@ -40,8 +40,9 @@ gapminder %>%
     ## 4 Norway        Europe     2007    80.2   4627926    49357.
     ## 5 Australia     Oceania    2007    81.2  20434176    34435.
 
+The same works with which.min()
+
 ``` r
-## the same works with which.min()
 gapminder %>% 
   filter(year == 2007) %>% # only 2007
   group_by(continent) %>% # group by continent
@@ -59,8 +60,9 @@ gapminder %>%
     ## 4 Albania          Europe     2007    76.4  3600523     5937.
     ## 5 New Zealand      Oceania    2007    80.2  4115771    25185.
 
+Or you can even just take the first row per group by specifiying slice(1)
+
 ``` r
-## Or you can even just take the first row per group by specifiying slice(1)
 gapminder %>% 
   filter(year == 2007) %>% # only 2007
   group_by(continent) %>% # group by continent
